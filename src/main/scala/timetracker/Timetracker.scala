@@ -11,6 +11,7 @@ object Timetracker extends App {
   screen.startScreen()
 
   var terminalSize = screen.getTerminalSize
+  val textGraphics = screen.newTextGraphics()
   screen.setCursorPosition(null)
   screen.refresh()
 
@@ -27,6 +28,8 @@ object Timetracker extends App {
       } else {
         terminalSize
       }
+      // Draw
+      textGraphics.putString(0, terminalSize.getRows - 1, "Logging time for blahblah")
       screen.refresh()
       Thread.`yield`()
     }
