@@ -64,19 +64,25 @@ object Timetracker extends App {
               val c = keyStroke.getCharacter()
               if (c == 'i') {
                 currentState = new InputMode()
+                screen.clear()
               }
             }
           }
           case InputMode() => {
             if (keyStroke.getKeyType() == KeyType.Escape) {
               currentString.clear()
-              currentState = new InputMode()
+              currentState = new ViewMode()
+              screen.clear()
             } else if (keyStroke.getKeyType() == KeyType.Enter) {
               if (currentString != "") {
                 currentTimes = currentTimes :+ new TimeStart(currentString.toString, now())
               }
               currentString.clear()
-              currentState = new InputMode()
+              currentState = new ViewMode()
+              screen.clear()
+            } else if (keyStroke.getKeyType() == KeyType.Backspace) {
+              currentString.deleteCharAt(currentString.length - 1)
+              screen.clear()
             } else if (keyStroke.getKeyType() == KeyType.Character) {
               currentString += keyStroke.getCharacter
             }
