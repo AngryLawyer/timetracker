@@ -10,6 +10,27 @@ class TimeStart(val name: String, val start: Long)
 object Timetracker extends App {
   def now() = System.currentTimeMillis
 
+  def collectTimes(times: List[TimeStart], out: SortedMap[String, Long]): SortedMap[String, Long] = {
+    times match {
+      case Nil => out
+      case time :: Nil => {
+        val additionalTime = now - time.start
+        val existingTime: Long = out.get(time.name).getOrElse(0)
+        out + (time.name -> (existingTime + additionalTime))
+      }
+      case first :: second :: _ => {
+        val additionalTime = second.start - first.start
+        val existingTime: Long = out.get(first.name).getOrElse(0)
+        val updated = out + (first.name -> (existingTime + additionalTime))
+        collectTimes(times.tail, updated)
+      }
+    }
+  }
+
+  def msToHours(dur: Long): Double = {
+    dur.toDouble / 1000 / 60 / 60
+  }
+
   val terminal = new DefaultTerminalFactory().createTerminal()
   val screen = new TerminalScreen(terminal)
   screen.startScreen()
@@ -21,7 +42,7 @@ object Timetracker extends App {
 
   val start = now()
 
-  var currentTimes = List(new TimeStart("Nothing", now()), new TimeStart("Something", now() + 10))
+  var currentTimes = List(new TimeStart("Nothing", now()))
 
   breakable {
     while (true) {
@@ -32,14 +53,18 @@ object Timetracker extends App {
 
       val newSize = screen.doResizeIfNecessary()
       terminalSize = if (newSize != null) {
+        screen.clear()
         newSize
       } else {
         terminalSize
       }
       // Draw
-      textGraphics.putString(0, terminalSize.getRows - 1, "Logging time for blahblah")
-      currentTimes.zipWithIndex.foreach { case(time, idx) => {
-        textGraphics.putString(0, idx, s"${time.name} - ${time.start}")
+      textGraphics.putString(0, terminalSize.getRows - 1, s"Logging time for ${currentTimes.reverse.head.name}")
+
+      val collected = collectTimes(currentTimes, SortedMap())
+      collected.zipWithIndex.foreach { case(pair, idx) => {
+        val (name, duration) = pair
+        textGraphics.putString(0, idx, f"${idx}: ${name} - ${msToHours(duration)}%.2f")
       }}
       screen.refresh()
       Thread.`yield`()
