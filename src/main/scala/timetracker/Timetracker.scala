@@ -5,7 +5,7 @@ import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 
-class TimeStart(val name: String, val start: Long)
+case class TimeStart(name: String, start: Long)
 
 object Timetracker extends App {
   def now() = System.currentTimeMillis
