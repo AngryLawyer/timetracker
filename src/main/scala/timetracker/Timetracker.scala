@@ -7,6 +7,11 @@ import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 
 case class TimeStart(name: String, start: Long)
 
+trait AppState
+case class ViewMode() extends AppState
+case class InputMode() extends AppState
+
+
 object Timetracker extends App {
   def now() = System.currentTimeMillis
 
@@ -41,14 +46,42 @@ object Timetracker extends App {
   screen.refresh()
 
   val start = now()
+  var currentState: AppState = new ViewMode()
+  val currentString = new StringBuilder
 
   var currentTimes = List(new TimeStart("Nothing", now()))
 
   breakable {
     while (true) {
       val keyStroke = screen.pollInput
-      if(keyStroke != null && (keyStroke.getKeyType() == KeyType.Escape || keyStroke.getKeyType() == KeyType.EOF)) {
-        break
+      if (keyStroke != null) {
+        if (keyStroke.getKeyType() == KeyType.EOF) {
+          break
+        }
+        currentState match {
+          case ViewMode() => {
+            if (keyStroke.getKeyType() == KeyType.Character) {
+              val c = keyStroke.getCharacter()
+              if (c == 'i') {
+                currentState = new InputMode()
+              }
+            }
+          }
+          case InputMode() => {
+            if (keyStroke.getKeyType() == KeyType.Escape) {
+              currentString.clear()
+              currentState = new InputMode()
+            } else if (keyStroke.getKeyType() == KeyType.Enter) {
+              if (currentString != "") {
+                currentTimes = currentTimes :+ new TimeStart(currentString.toString, now())
+              }
+              currentString.clear()
+              currentState = new InputMode()
+            } else if (keyStroke.getKeyType() == KeyType.Character) {
+              currentString += keyStroke.getCharacter
+            }
+          }
+        }
       }
 
       val newSize = screen.doResizeIfNecessary()
@@ -58,8 +91,16 @@ object Timetracker extends App {
       } else {
         terminalSize
       }
+
       // Draw
-      textGraphics.putString(0, terminalSize.getRows - 1, s"Logging time for ${currentTimes.reverse.head.name}")
+      currentState match {
+        case ViewMode() => {
+          textGraphics.putString(0, terminalSize.getRows - 1, s"Logging time for ${currentTimes.reverse.head.name}")
+        }
+        case InputMode() => {
+          textGraphics.putString(0, terminalSize.getRows - 1, s"? ${currentString}")
+        }
+      }
 
       val collected = collectTimes(currentTimes, SortedMap())
       collected.zipWithIndex.foreach { case(pair, idx) => {
