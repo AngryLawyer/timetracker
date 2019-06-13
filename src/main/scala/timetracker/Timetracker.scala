@@ -20,8 +20,8 @@ object Timetracker extends App {
   screen.refresh()
 
   var currentScreen: AppState = new ViewMode()
-
   var currentTimes = List(new TimeStart("Nothing", now()))
+  var shouldExit = false
 
   sys.addShutdownHook {
     if (screen != null) {
@@ -31,7 +31,7 @@ object Timetracker extends App {
   }
 
   breakable {
-    while (true) {
+    while (!shouldExit) {
       val newSize = screen.doResizeIfNecessary()
       terminalSize = if (newSize != null) {
         screen.clear()
@@ -45,9 +45,10 @@ object Timetracker extends App {
         if (keyStroke.getKeyType() == KeyType.EOF) {
           break
         }
-        val (newScreen, newTimes) = currentScreen.handleInput(screen, keyStroke, currentTimes)
+        val (newScreen, newTimes, exit) = currentScreen.handleInput(screen, keyStroke, currentTimes)
         currentScreen = newScreen
         currentTimes = newTimes
+        shouldExit = exit
       }
 
       currentScreen.render(screen, terminalSize, currentTimes)

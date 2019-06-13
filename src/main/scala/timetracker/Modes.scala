@@ -8,7 +8,7 @@ case class TimeStart(name: String, start: Long)
 
 trait AppState {
   def render(screen: TerminalScreen, terminalSize: TerminalSize, times: List[TimeStart])
-  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke, times: List[TimeStart]): Tuple2[AppState, List[TimeStart]]
+  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke, times: List[TimeStart]): Tuple3[AppState, List[TimeStart], Boolean]
 }
 
 object AppState {
@@ -53,15 +53,17 @@ class ViewMode() extends AppState {
     textGraphics.putString(0, terminalSize.getRows - 1, s"Logging time for ${times.reverse.head.name}")
   }
 
-  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke, times: List[TimeStart]): Tuple2[AppState, List[TimeStart]] = {
-    if (keyStroke.getKeyType() == KeyType.Character) {
+  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke, times: List[TimeStart]): Tuple3[AppState, List[TimeStart], Boolean] = {
+    if (keyStroke.getKeyType() == KeyType.F10) {
+      return (this, times, true)
+    } else if (keyStroke.getKeyType() == KeyType.Character) {
       val c = keyStroke.getCharacter()
       if (c == 'i') {
         screen.clear()
-        return (new InputMode(), times)
+        return (new InputMode(), times, false)
       }
     }
-    (this, times)
+    (this, times, false)
   }
 }
 
@@ -74,11 +76,11 @@ class InputMode() extends AppState {
     AppState.renderTimes(screen, terminalSize, times)
   }
 
-  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke, times: List[TimeStart]): Tuple2[AppState, List[TimeStart]] = {
+  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke, times: List[TimeStart]): Tuple3[AppState, List[TimeStart], Boolean] = {
     if (keyStroke.getKeyType() == KeyType.Escape) {
       currentString.clear()
       screen.clear()
-      return (new ViewMode(), times)
+      return (new ViewMode(), times, false)
     } else if (keyStroke.getKeyType() == KeyType.Enter) {
       val currentTimes = if (currentString != "") {
         times :+ new TimeStart(currentString.toString, AppState.now())
@@ -87,13 +89,13 @@ class InputMode() extends AppState {
       }
       currentString.clear()
       screen.clear()
-      return (new ViewMode(), currentTimes)
-    } else if (keyStroke.getKeyType() == KeyType.Backspace) {
+      return (new ViewMode(), currentTimes, false)
+    } else if (keyStroke.getKeyType() == KeyType.Backspace && currentString.length > 0) {
       currentString.deleteCharAt(currentString.length - 1)
       screen.clear()
     } else if (keyStroke.getKeyType() == KeyType.Character) {
       currentString += keyStroke.getCharacter
     }
-    (this, times)
+    (this, times, false)
   }
 }
