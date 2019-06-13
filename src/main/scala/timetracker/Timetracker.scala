@@ -30,32 +30,31 @@ object Timetracker extends App {
     // Can we write out to a file here?
   }
 
-  breakable {
-    while (!shouldExit) {
-      val newSize = screen.doResizeIfNecessary()
-      terminalSize = if (newSize != null) {
-        screen.clear()
-        newSize
-      } else {
-        terminalSize
-      }
+  while (!shouldExit) {
+    val newSize = screen.doResizeIfNecessary()
+    terminalSize = if (newSize != null) {
+      screen.clear()
+      newSize
+    } else {
+      terminalSize
+    }
 
-      val keyStroke = screen.pollInput
-      if (keyStroke != null) {
-        if (keyStroke.getKeyType() == KeyType.EOF) {
-          break
-        }
+    val keyStroke = screen.pollInput
+    if (keyStroke != null) {
+      if (keyStroke.getKeyType() == KeyType.EOF) {
+        shouldExit = true
+      } else {
         val (newScreen, newTimes, exit) = currentScreen.handleInput(screen, keyStroke, currentTimes)
         currentScreen = newScreen
         currentTimes = newTimes
         shouldExit = exit
       }
-
-      currentScreen.render(screen, terminalSize, currentTimes)
-
-      screen.refresh()
-      Thread.`yield`()
     }
+
+    currentScreen.render(screen, terminalSize, currentTimes)
+
+    screen.refresh()
+    Thread.`yield`()
   }
 
   if (screen != null) {
