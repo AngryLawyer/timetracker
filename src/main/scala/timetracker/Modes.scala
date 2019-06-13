@@ -1,10 +1,14 @@
+package timetracker.modes
 import scala.collection.SortedMap
-import com.googlecode.lanterna.screen.{TerminalScreen, TerminalSize}
+import com.googlecode.lanterna.screen.{TerminalScreen}
+import com.googlecode.lanterna.{TerminalSize}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
+
+case class TimeStart(name: String, start: Long)
 
 trait AppState {
   def render(screen: TerminalScreen, terminalSize: TerminalSize, times: List[TimeStart])
-  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke): AppState
+  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke, times: List[TimeStart]): Tuple2[AppState, List[TimeStart]]
 }
 
 object AppState {
@@ -49,15 +53,15 @@ class ViewMode() extends AppState {
     textGraphics.putString(0, terminalSize.getRows - 1, s"Logging time for ${times.reverse.head.name}")
   }
 
-  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke): AppState = {
+  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke, times: List[TimeStart]): Tuple2[AppState, List[TimeStart]] = {
     if (keyStroke.getKeyType() == KeyType.Character) {
       val c = keyStroke.getCharacter()
       if (c == 'i') {
         screen.clear()
-        return new ViewMode()
+        return (new InputMode(), times)
       }
     }
-    this
+    (this, times)
   }
 }
 
@@ -70,24 +74,26 @@ class InputMode() extends AppState {
     AppState.renderTimes(screen, terminalSize, times)
   }
 
-  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke): AppState = {
+  def handleInput(screen: TerminalScreen, keyStroke: KeyStroke, times: List[TimeStart]): Tuple2[AppState, List[TimeStart]] = {
     if (keyStroke.getKeyType() == KeyType.Escape) {
       currentString.clear()
-      currentState = new ViewMode()
       screen.clear()
+      return (new ViewMode(), times)
     } else if (keyStroke.getKeyType() == KeyType.Enter) {
-      if (currentString != "") {
-        currentTimes = currentTimes :+ new TimeStart(currentString.toString, now())
+      val currentTimes = if (currentString != "") {
+        times :+ new TimeStart(currentString.toString, AppState.now())
+      } else {
+        times
       }
       currentString.clear()
-      currentState = new ViewMode()
       screen.clear()
+      return (new ViewMode(), currentTimes)
     } else if (keyStroke.getKeyType() == KeyType.Backspace) {
       currentString.deleteCharAt(currentString.length - 1)
       screen.clear()
     } else if (keyStroke.getKeyType() == KeyType.Character) {
       currentString += keyStroke.getCharacter
     }
-    this
+    (this, times)
   }
 }

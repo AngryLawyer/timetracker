@@ -4,15 +4,12 @@ import scala.util.control.Breaks._
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
-
-case class TimeStart(name: String, start: Long)
-
-trait AppState
-case class ViewMode() extends AppState
-case class InputMode() extends AppState
+import timetracker.modes.{AppState, ViewMode, InputMode, TimeStart}
 
 
 object Timetracker extends App {
+  def now() = System.currentTimeMillis
+
   val terminal = new DefaultTerminalFactory().createTerminal()
   val screen = new TerminalScreen(terminal)
   screen.startScreen()
@@ -48,7 +45,7 @@ object Timetracker extends App {
         if (keyStroke.getKeyType() == KeyType.EOF) {
           break
         }
-        val (newScreen, newTimes) = currentScreen.handleInput(screen, keyStroke)
+        val (newScreen, newTimes) = currentScreen.handleInput(screen, keyStroke, currentTimes)
         currentScreen = newScreen
         currentTimes = newTimes
       }
